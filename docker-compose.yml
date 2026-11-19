@@ -1,0 +1,59 @@
+
+services:
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+
+    container_name: tokentrail-backend
+
+    environment:
+      APP_ENV: development
+      HOST: 0.0.0.0
+      PORT: 8000
+      LOG_LEVEL: INFO
+
+      DATABASE_URL: sqlite+aiosqlite:////data/tokentrail.db
+
+      CORS_ORIGINS: http://localhost,http://127.0.0.1
+
+      INTERNAL_JOBS_TOKEN: task_testing_only_change_later
+
+    volumes:
+      - tokentrail_data:/data
+
+    expose:
+      - "8000"
+
+    restart: unless-stopped
+
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+
+    container_name: tokentrail-frontend
+
+    ports:
+      - "80:80"
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+volumes:
+  tokentrail_data:
